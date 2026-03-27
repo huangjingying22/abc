@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI 医美顾问 - 真医美</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body { background-color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: -apple-system, sans-serif; }
+        .mobile-container { width: 375px; height: 812px; background: #F7F9FC; border: 8px solid #333; border-radius: 40px; position: relative; overflow: hidden; display: flex; flex-col; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 16px; scroll-behavior: smooth; }
+        .chat-bubble-ai { background: white; border-radius: 20px 20px 20px 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); max-width: 85%; }
+        .chat-bubble-user { background: #FF7E8D; color: white; border-radius: 20px 20px 4px 20px; max-width: 80%; margin-left: auto; }
+        .feature-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .feature-card:hover { transform: translateY(-4px); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .action-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; background: white; border-top: 1px solid #edf2f7; }
+    </style>
+</head>
+<body>
+<div class="mobile-container flex flex-col">
+<!-- Header -->
+<div class="bg-white px-5 py-4 flex items-center justify-between border-b border-gray-100 mt-8">
+<div class="flex items-center gap-3">
+<a class="text-gray-400" href="index.html"><iconify-icon icon="mdi:chevron-left" width="28"></iconify-icon></a>
+<div>
+<h2 class="font-bold text-gray-800">AI 医美顾问</h2>
+<p class="text-[10px] text-green-500 flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        AI 小真 在线为你守护
+                    </p>
+</div>
+</div>
+<iconify-icon class="text-gray-400" icon="mdi:dots-horizontal" width="24"></iconify-icon>
+</div>
+<!-- Chat Area -->
+<div class="chat-container hide-scroll" id="chatWindow">
+<div class="text-center my-4 text-[11px] text-gray-400">2026年03月27日 09:41</div>
+<!-- AI Welcome -->
+<div class="flex gap-2 mb-6">
+<div class="w-10 h-10 bg-rose-100 rounded-full flex-shrink-0 flex items-center justify-center">
+<iconify-icon class="text-rose-500" icon="mdi:robot-happy" width="24"></iconify-icon>
+</div>
+<div class="chat-bubble-ai p-4">
+<p class="text-sm text-gray-700 leading-relaxed">你好！我是 AI 小真。我会陪你实时跟进求美进度，保证你的求美体验。你可以直接问我问题，或者点击下方功能开始：</p>
+</div>
+</div>
+<!-- 功能板块联动区 -->
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="feature-card bg-blue-50 p-4 rounded-2xl border border-blue-100" onclick="showScenario('analysis')">
+<iconify-icon class="text-blue-500 mb-2" icon="mdi:face-recognition" width="24"></iconify-icon>
+<h3 class="text-xs font-bold text-blue-800">个人情况分析</h3>
+<p class="text-[9px] text-blue-600 mt-1">肤质检测与建议</p>
+</div>
+<div class="feature-card bg-purple-50 p-4 rounded-2xl border border-purple-100" onclick="showScenario('recommend')">
+<iconify-icon class="text-purple-500 mb-2" icon="mdi:hospital-building" width="24"></iconify-icon>
+<h3 class="text-xs font-bold text-purple-800">机构推荐</h3>
+<p class="text-[9px] text-purple-600 mt-1">优质合规机构筛选</p>
+</div>
+<div class="feature-card bg-orange-50 p-4 rounded-2xl border border-orange-100" onclick="showScenario('contract')">
+<iconify-icon class="text-orange-500 mb-2" icon="mdi:file-document-edit" width="24"></iconify-icon>
+<h3 class="text-xs font-bold text-orange-800">合同上传鉴别</h3>
+<p class="text-[9px] text-orange-600 mt-1">防范霸王条款风险</p>
+</div>
+<div class="feature-card bg-teal-50 p-4 rounded-2xl border border-teal-100" onclick="showScenario('guard')">
+<iconify-icon class="text-teal-500 mb-2" icon="mdi:shield-sun" width="24"></iconify-icon>
+<h3 class="text-xs font-bold text-teal-800">术前术后准备</h3>
+<p class="text-[9px] text-teal-600 mt-1">专业恢复注意事项</p>
+</div>
+</div>
+<!-- Dynamic Messages will appear here -->
+<div class="space-y-6" id="dynamicMessages"></div>
+</div>
+<!-- Suggestions Horizontal Scroll -->
+<div class="px-4 py-2 bg-gray-50 flex gap-2 overflow-x-auto hide-scroll whitespace-nowrap">
+<span class="px-3 py-1.5 bg-white rounded-full text-[11px] text-gray-500 border border-gray-100">帮我推荐一些合适的机构吧</span>
+<span class="px-3 py-1.5 bg-white rounded-full text-[11px] text-gray-500 border border-gray-100">请帮我分析一下我的面部状态</span>
+<span class="px-3 py-1.5 bg-white rounded-full text-[11px] text-gray-500 border border-gray-100">术后要注意什么？</span>
+</div>
+<!-- Input Bar -->
+<div class="bg-white p-4 pb-8 flex items-center gap-3">
+<iconify-icon class="text-gray-400" icon="mdi:plus-circle-outline" width="28"></iconify-icon>
+<div class="flex-1 bg-gray-100 rounded-2xl px-4 py-2 flex items-center">
+<input class="bg-transparent border-none outline-none text-sm w-full" placeholder="输入你想咨询的医美话题..." type="text"/>
+</div>
+<div class="w-10 h-10 bg-rose-500 rounded-full flex items-center justify-center text-white">
+<iconify-icon icon="mdi:send" width="20"></iconify-icon>
+</div>
+</div>
+</div>
+<script>
+        function showScenario(type) {
+            const container = document.getElementById('dynamicMessages');
+            container.innerHTML = ''; // Clear for demo
+            
+            if (type === 'recommend') {
+                appendUserMsg('帮我推荐一些合适的机构吧。');
+                setTimeout(() => {
+                    appendAiMsg('好的，以下是为您生成的符合资质的机构与介绍，以及机构相应的评分和真实评价。');
+                    appendContent(`
+                        <div class="space-y-3 mt-3">
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-bold text-sm">1. 良辰美业</h4>
+                                    <span class="text-rose-500 text-xs font-bold">★ 4.5</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mb-2">美容 | 八里街 | 669m</p>
+                                <div class="bg-rose-50 p-2 rounded-lg">
+                                    <p class="text-[10px] text-rose-700 leading-tight"><b>核心特色：</b>近期服务与环境好评双高的中年女性人气美容店，提供从基础皮肤管理到专业微整手术全方位服务。</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-bold text-sm">2. 悦颜美容美发馆</h4>
+                                    <span class="text-rose-500 text-xs font-bold">★ 4.0</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mb-2">美容 | 联发乾景广场 | 1.2km</p>
+                                <div class="bg-blue-50 p-2 rounded-lg">
+                                    <p class="text-[10px] text-blue-700 leading-tight"><b>核心特色：</b>集头疗、皮肤管理与身体SPA为一体。主打面部拨筋特色项目，有效缓解疲劳。</p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }, 800);
+            } else if (type === 'analysis') {
+                appendUserMsg('请帮我分析一下我的面部状态。');
+                setTimeout(() => {
+                    appendAiMsg('好的，请您将手机前置摄像头打开，确保周围环境光线均匀，去除口罩、眼镜，拍摄您的脸部【正面】【右面】【左面】的照片。');
+                    appendContent(`
+                        <div class="flex gap-2 mt-3">
+                            <div class="flex-1 aspect-[3/4] bg-gray-200 rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-gray-300">
+                                <iconify-icon icon="mdi:camera" width="24" class="text-gray-400"></iconify-icon>
+                                <span class="text-[10px] text-gray-400 mt-1">正面照</span>
+                            </div>
+                            <div class="flex-1 aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                                <span class="text-[10px] text-gray-400">右侧位</span>
+                            </div>
+                            <div class="flex-1 aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                                <span class="text-[10px] text-gray-400">左侧位</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-white rounded-xl shadow-sm border-l-4 border-rose-400">
+                            <h4 class="font-bold text-xs mb-2">分析结果建议</h4>
+                            <div class="space-y-2">
+                                <p class="text-[10px]"><span class="font-bold text-rose-500">护肤品推荐：</span>针对检测到的细纹，推荐含A醇或玻色因的护肤品。</p>
+                                <p class="text-[10px]"><span class="font-bold text-rose-500">医美科普：</span>针对检测到的松弛，建议了解超声炮或热玛吉项目。</p>
+                            </div>
+                        </div>
+                    `);
+                }, 800);
+            } else if (type === 'contract') {
+                appendUserMsg('请帮我分析一下这份合同。');
+                setTimeout(() => {
+                    appendAiMsg('好的，请拍下合同照片并上传。');
+                    appendContent(`
+                        <div class="mt-3 p-4 bg-orange-50 rounded-xl border border-orange-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <iconify-icon icon="mdi:alert-decagram" class="text-orange-500"></iconify-icon>
+                                <span class="text-xs font-bold text-orange-800">识别到风险条款 (1/8)</span>
+                            </div>
+                            <p class="text-[10px] text-orange-700">您上传的合同包含“本院概不负责”或类似表述，这属于典型的<b>霸王条款</b>，剥夺了消费者合法权利，请慎重签约。</p>
+                        </div>
+                    `);
+                }, 800);
+            } else if (type === 'guard') {
+                appendUserMsg('请帮我提一些术前准备建议。');
+                setTimeout(() => {
+                    appendAiMsg('术前准备是确保安全与效果的关键，以下是您的专属清单：');
+                    appendContent(`
+                        <div class="mt-3 space-y-3">
+                            <div class="bg-white p-3 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-xs text-rose-500 mb-2">1. 身体与用药调整</h4>
+                                <ul class="text-[10px] text-gray-600 space-y-1 list-disc pl-3">
+                                    <li>停用抗凝血药物（如阿司匹林、维生素E）</li>
+                                    <li>提前3-7天停止饮酒</li>
+                                    <li>确保非生理期（针对手术类）</li>
+                                </ul>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-xs text-rose-500 mb-2">2. 生活起居准备</h4>
+                                <ul class="text-[10px] text-gray-600 space-y-1 list-disc pl-3">
+                                    <li>术前保证充足睡眠</li>
+                                    <li>清洁面部，不带妆前往机构</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `);
+                }, 800);
+            }
+            
+            // Auto scroll
+            setTimeout(() => {
+                const chatWin = document.getElementById('chatWindow');
+                chatWin.scrollTop = chatWin.scrollHeight;
+            }, 1000);
+        }
+
+        function appendUserMsg(text) {
+            const div = document.createElement('div');
+            div.className = 'chat-bubble-user p-3 text-sm mb-4';
+            div.textContent = text;
+            document.getElementById('dynamicMessages').appendChild(div);
+        }
+
+        function appendAiMsg(text) {
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 mb-2';
+            div.innerHTML = `
+                <div class="w-8 h-8 bg-rose-100 rounded-full flex-shrink-0 flex items-center justify-center">
+                    <iconify-icon icon="mdi:robot-happy" class="text-rose-500" width="18"></iconify-icon>
+                </div>
+                <div class="chat-bubble-ai p-3 text-sm text-gray-700">
+                    <p>${text}</p>
+                </div>
+            `;
+            document.getElementById('dynamicMessages').appendChild(div);
+        }
+
+        function appendContent(html) {
+            const div = document.createElement('div');
+            div.className = 'ml-10 mb-4';
+            div.innerHTML = html;
+            document.getElementById('dynamicMessages').appendChild(div);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>游戏互动中 - 真医美</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body { background-color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: -apple-system, sans-serif; }
+        .mobile-container { width: 375px; height: 812px; background: #FFF; border: 8px solid #333; border-radius: 40px; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .match-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
+        .match-card.selected { border-color: #F43F5E; background-color: #FFF1F2; }
+        .match-card.correct { border-color: #10B981; background-color: #ECFDF5; pointer-events: none; opacity: 0.6; }
+        .dialog-box { background: rgba(0,0,0,0.8); color: white; border-radius: 16px; padding: 16px; position: absolute; bottom: 120px; left: 20px; right: 20px; }
+    </style>
+</head>
+<body>
+<div class="mobile-container">
+<!-- Header -->
+<div class="mt-10 px-6 py-4 flex items-center justify-between border-b border-gray-50">
+<a class="text-gray-400" href="game_hub.html"><iconify-icon icon="mdi:close" width="24"></iconify-icon></a>
+<h2 class="font-bold text-gray-800" id="pageTitle">游戏关卡</h2>
+<div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-xs">0/5</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 p-6 flex flex-col overflow-y-auto" id="gameContent">
+<!-- Content injected by JS -->
+</div>
+<!-- Feedback Overlay (Hidden by default) -->
+<div class="hidden absolute inset-0 bg-black/50 flex items-center justify-center p-8 z-50" id="feedback">
+<div class="bg-white rounded-3xl p-8 w-full text-center">
+<div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" id="feedbackIcon"></div>
+<h3 class="text-xl font-bold mb-2" id="feedbackTitle"></h3>
+<p class="text-gray-500 text-sm mb-6" id="feedbackText"></p>
+<button class="w-full py-4 bg-gray-800 text-white font-bold rounded-2xl" onclick="closeFeedback()">继续闯关</button>
+</div>
+</div>
+</div>
+<script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode') || 'match';
+
+        window.onload = () => {
+            if (mode === 'match') {
+                renderMatchGame();
+            } else {
+                renderRolePlay();
+            }
+        };
+
+        // --- Match Game Logic ---
+        let selectedLeft = null;
+        const correctPairs = {
+            'trap-1': 'script-1',
+            'trap-2': 'script-2',
+            'trap-3': 'script-3',
+            'trap-4': 'script-4'
+        };
+        let matchesFound = 0;
+
+        function renderMatchGame() {
+            document.getElementById('pageTitle').textContent = '认知启蒙：套路配对';
+            document.getElementById('gameContent').innerHTML = `
+                <p class="text-xs text-gray-400 mb-6">请将左侧【套路】与右侧【话术】进行配对：</p>
+                <div class="flex gap-4 flex-1">
+                    <div class="flex-1 space-y-4">
+                        <div id="trap-1" onclick="selectLeft('trap-1')" class="match-card p-3 bg-rose-50 rounded-xl text-center text-xs font-bold text-rose-800 h-16 flex items-center justify-center">免费诱饵套路</div>
+                        <div id="trap-2" onclick="selectLeft('trap-2')" class="match-card p-3 bg-blue-50 rounded-xl text-center text-xs font-bold text-blue-800 h-16 flex items-center justify-center">虚假宣传套路</div>
+                        <div id="trap-3" onclick="selectLeft('trap-3')" class="match-card p-3 bg-amber-50 rounded-xl text-center text-xs font-bold text-amber-800 h-16 flex items-center justify-center">心理操控套路</div>
+                        <div id="trap-4" onclick="selectLeft('trap-4')" class="match-card p-3 bg-purple-50 rounded-xl text-center text-xs font-bold text-purple-800 h-16 flex items-center justify-center">限时诱导套路</div>
+                    </div>
+                    <div class="flex-1 space-y-4">
+                        <div id="script-3" onclick="selectRight('script-3')" class="match-card p-3 bg-gray-50 rounded-xl text-center text-[10px] text-gray-600 h-16 flex items-center justify-center leading-tight">再不做就老了 / 姐你这么爱美，肯定想变年轻</div>
+                        <div id="script-1" onclick="selectRight('script-1')" class="match-card p-3 bg-gray-50 rounded-xl text-center text-[10px] text-gray-600 h-16 flex items-center justify-center leading-tight">免费测皮肤、免费体验、低价材料费</div>
+                        <div id="script-4" onclick="selectRight('script-4')" class="match-card p-3 bg-gray-50 rounded-xl text-center text-[10px] text-gray-600 h-16 flex items-center justify-center leading-tight">今天报名立减、明天涨价、名额有限</div>
+                        <div id="script-2" onclick="selectRight('script-2')" class="match-card p-3 bg-gray-50 rounded-xl text-center text-[10px] text-gray-600 h-16 flex items-center justify-center leading-tight">永不反弹、无效退款、7天见效、无副作用</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectLeft(id) {
+            if (selectedLeft) document.getElementById(selectedLeft).classList.remove('selected');
+            selectedLeft = id;
+            document.getElementById(id).classList.add('selected');
+        }
+
+        function selectRight(id) {
+            if (!selectedLeft) return;
+            
+            if (correctPairs[selectedLeft] === id) {
+                document.getElementById(selectedLeft).classList.replace('selected', 'correct');
+                document.getElementById(id).classList.add('correct');
+                matchesFound++;
+                if (matchesFound === 4) {
+                    showFeedback(true, '太棒了！', '你已经识破了基础套路，能够分辨话术中的陷阱。');
+                }
+            } else {
+                showFeedback(false, '配对错误', '再想想，这个话术对应的套路重点在哪里？');
+            }
+            selectedLeft = null;
+        }
+
+        // --- Role Play Logic ---
+        function renderRolePlay() {
+            document.getElementById('pageTitle').textContent = '角色扮演：门店应对';
+            document.getElementById('gameContent').className = "flex-1 relative -mx-6 -mt-6 overflow-hidden";
+            document.getElementById('gameContent').innerHTML = `
+                <img src="/agent-py/static/source/images/placeholder.svg" alt="Beauty Clinic Consultant" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                
+                <div class="dialog-box">
+                    <p class="text-rose-300 font-bold text-xs mb-1">销售顾问：</p>
+                    <p class="text-sm leading-relaxed">姐，您来了！看您脸上有皱纹、色斑，我们家新出的除皱祛斑项目，做一次就能见效，很多姐都做了，反馈特别好！您今天正好赶上活动价...</p>
+                </div>
+
+                <div class="absolute bottom-6 left-5 right-5 space-y-3">
+                    <button onclick="answerRolePlay('A')" class="w-full py-3 px-4 bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs text-left rounded-xl hover:bg-white/30">A. 真的吗，那我试试，多少钱？</button>
+                    <button onclick="answerRolePlay('B')" class="w-full py-3 px-4 bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs text-left rounded-xl hover:bg-white/30">B. 你先给我看看你们的营业执照和医生的执业证书</button>
+                    <button onclick="answerRolePlay('C')" class="w-full py-3 px-4 bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs text-left rounded-xl hover:bg-white/30">C. 我不需要，谢谢</button>
+                </div>
+            `;
+        }
+
+        function answerRolePlay(choice) {
+            if (choice === 'B') {
+                showFeedback(true, '智慧选择！', '查看资质是求美者的第一防线。非法行医往往无法出示正规执照和医师证。');
+            } else if (choice === 'A') {
+                showFeedback(false, '警惕！', '还没核实对方资质就决定尝试，很容易掉入非法行医或虚假宣传的陷阱哦。');
+            } else {
+                showFeedback(true, '及时止损', '礼貌拒绝也是保护钱包和安全的一种方式，但如果真的想做，记得先审资质。');
+            }
+        }
+
+        function showFeedback(isSuccess, title, text) {
+            const overlay = document.getElementById('feedback');
+            const iconDiv = document.getElementById('feedbackIcon');
+            overlay.classList.remove('hidden');
+            
+            document.getElementById('feedbackTitle').textContent = title;
+            document.getElementById('feedbackText').textContent = text;
+            
+            if (isSuccess) {
+                iconDiv.className = 'w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-green-100 text-green-500';
+                iconDiv.innerHTML = '<iconify-icon icon="mdi:check-circle" width="40"></iconify-icon>';
+            } else {
+                iconDiv.className = 'w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-rose-100 text-rose-500';
+                iconDiv.innerHTML = '<iconify-icon icon="mdi:alert-circle" width="40"></iconify-icon>';
+            }
+        }
+
+        function closeFeedback() {
+            document.getElementById('feedback').classList.add('hidden');
+            if (matchesFound === 4) window.location.href = 'game_hub.html';
+        }
+    </script>
+</body>
+</html>
